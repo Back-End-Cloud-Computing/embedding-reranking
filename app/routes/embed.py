@@ -5,10 +5,10 @@ from fastapi import APIRouter
 from app.clients import vector_db_client
 from app.core.config import get_settings
 from app.schemas.embed import (
-    EmbedIndexRequest,
-    EmbedIndexResponse,
     EmbedRequest,
     EmbedResponse,
+    IndexRequest,
+    IndexResponse,
     SearchRequest,
     SearchResponse,
 )
@@ -26,34 +26,49 @@ async def embed(payload: EmbedRequest) -> EmbedResponse:
     return EmbedResponse(embeddings=embeddings, model=get_settings().embedding_model_name, count=len(payload.texts))
 
 
-@router.post("/embed/index", response_model=EmbedIndexResponse)
-async def embed_index(payload: EmbedIndexRequest) -> EmbedIndexResponse:
-    """Generates the embedding for a product and indexes it into the vector-db.
+@router.post("/index", response_model=IndexResponse)
+async def index(payload: IndexRequest) -> IndexResponse:
+    """Generates the embedding for one entity and indexes it into the vector-db,
+    under the caller-specified collection. Generic across entity types: the
+    caller (product-service today, any future domain service tomorrow) just
+    states which collection its data belongs to.
 
-    This is the only path that indexes a product's vector: the caller (the
-    product-service) is expected to retry on failure, so any downstream error
-    here propagates instead of being swallowed.
+    This is the only path that indexes a vector: the caller is expected to
+    retry on failure, so any downstream error here propagates instead of
+    being swallowed.
     """
     embeddings = await embedding_service.generate_embeddings([payload.text])
     await vector_db_client.insert(
-        [
+        collection_name=payload.collection_name,
+        items=[
             {
-                "product_id": payload.product_id,
+                "id": payload.id,
                 "embedding": embeddings[0],
                 "metadata": payload.metadata,
                 "document": payload.text,
             }
-        ]
+        ],
     )
-    logger.info("Indexed product '%s' into vector-db", payload.product_id)
-    return EmbedIndexResponse(product_id=payload.product_id, status="indexed", model=get_settings().embedding_model_name)
+    logger.info("Indexed '%s' into vector-db collection '%s'", payload.id, payload.collection_name)
+    return IndexResponse(
+        id=payload.id,
+        collection_name=payload.collection_name,
+        status="indexed",
+        model=get_settings().embedding_model_name,
+    )
 
 
 @router.post("/search", response_model=SearchResponse)
 async def search(payload: SearchRequest) -> SearchResponse:
-    """Embeds the query text and delegates the KNN search to the vector-db."""
+    """Embeds the query text and delegates the KNN search to the vector-db,
+    within the caller-specified collection."""
     embeddings = await embedding_service.generate_embeddings([payload.query])
-    result = await vector_db_client.search(embeddings[0], n_results=payload.n_results, where=payload.where)
+    result = await vector_db_client.search(
+        collection_name=payload.collection_name,
+        embedding=embeddings[0],
+        n_results=payload.n_results,
+        where=payload.where,
+    )
     return SearchResponse(
         ids=result.get("ids", []),
         distances=result.get("distances", []),

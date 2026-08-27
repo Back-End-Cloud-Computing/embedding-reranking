@@ -13,19 +13,22 @@ class EmbedResponse(BaseModel):
     count: int
 
 
-class EmbedIndexRequest(BaseModel):
-    product_id: str = Field(..., min_length=1)
+class IndexRequest(BaseModel):
+    collection_name: str = Field(..., min_length=1, description="Vector-db collection this entity is indexed into.")
+    id: str = Field(..., min_length=1)
     text: str = Field(..., min_length=1)
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
-class EmbedIndexResponse(BaseModel):
-    product_id: str
+class IndexResponse(BaseModel):
+    id: str
+    collection_name: str
     status: str
     model: str
 
 
 class SearchRequest(BaseModel):
+    collection_name: str = Field(..., min_length=1, description="Vector-db collection to search in.")
     query: str = Field(..., min_length=1)
     n_results: int = Field(default=10, ge=1, le=100)
     where: dict[str, Any] | None = None
