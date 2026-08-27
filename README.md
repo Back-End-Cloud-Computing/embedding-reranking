@@ -1,9 +1,13 @@
 # embedding-reranking
 
-Embedding generation microservice for the GANJJ e-commerce platform, built with
-**FastAPI** + `sentence-transformers`. It is the only service allowed to call
-`vector-db` for indexing or searching vectors — domain services (`product-service`
-today, others later) never talk to `vector-db` directly for those operations.
+Embedding generation and reranking microservice for the GANJJ e-commerce
+platform, built with **FastAPI** + `sentence-transformers`. It owns the
+*write* path into `vector-db` (indexing) — domain services never generate
+embeddings or write to `vector-db` themselves. Reading is different: a domain
+service embeds its own query text via `/embed`, searches `vector-db` directly,
+then optionally reranks the candidates it got back via `/rerank` here. This
+service never touches `vector-db` for reads, and has no collection/query
+knowledge at all for reranking.
 
 ## Scope
 
@@ -11,29 +15,29 @@ today, others later) never talk to `vector-db` directly for those operations.
   using a free/open-source multilingual model
   (`paraphrase-multilingual-MiniLM-L12-v2` by default), suitable for Portuguese.
 - Indexes one entity's embedding into a caller-specified `vector-db` collection
-  (`POST /index`). Generic across entity types: the caller states its own
+  (`POST /index`), generic across entity types: the caller states its own
   `collection_name` and `id` (product-service uses `"products"` today; a
   future domain service would use its own collection name without any change
-  here).
-- Embeds a search query and delegates the KNN search to `vector-db`, within
-  the caller-specified collection (`POST /search`), so callers never need the
-  raw vector or to know `vector-db`'s API shape.
-- Does **not** access ChromaDB directly — all vector storage/search goes
-  through `vector-db`'s HTTP API.
+  here). Any existing vector under that same id is deleted first, so
+  re-indexing (or a retried call) never leaves duplicate rows behind.
+- Reranks a caller-supplied list of passages by relevance to a query
+  (`POST /rerank`), via cosine similarity between their embeddings (the same
+  bi-encoder model used for indexing - no separate cross-encoder to load).
+  Pure function: no vector-db or collection knowledge, so it works on
+  candidates from anywhere.
+- Does **not** run searches or access ChromaDB for reads — domain services
+  embed their own query text via `/embed` and call `vector-db`'s search
+  directly, then rerank the results here if they want reordering.
 - Does **not** contain business prompts or domain-specific text building —
   callers send ready-to-embed text and their own metadata.
-
-Out of scope for now: reranking of search results. The `/search` endpoint is
-the natural place to add a cross-encoder reranking pass later, once
-`vector-db` returns a larger candidate set to re-score.
 
 ## Endpoints
 
 | Method | Path | Description |
 |---|---|---|
 | POST | `/embed` | Batch-embed a list of texts. No side effects. |
-| POST | `/index` | Embed one entity's text and upsert it into a `vector-db` collection. |
-| POST | `/search` | Embed a query and run KNN search via `vector-db`, within a collection. |
+| POST | `/index` | Embed one entity's text and (re)index it into a `vector-db` collection. |
+| POST | `/rerank` | Reorder caller-supplied passages by relevance to a query. |
 | GET | `/health` | Liveness check. |
 
 ## Stack

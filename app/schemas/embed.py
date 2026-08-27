@@ -27,16 +27,24 @@ class IndexResponse(BaseModel):
     model: str
 
 
-class SearchRequest(BaseModel):
-    collection_name: str = Field(..., min_length=1, description="Vector-db collection to search in.")
+class RerankRequest(BaseModel):
+    """Reorders a caller-supplied list of passages by relevance to `query`.
+
+    Pure function: takes no collection/vector-db knowledge, so it works on
+    candidates retrieved from anywhere (typically the caller's own
+    vector-db search results)."""
+
     query: str = Field(..., min_length=1)
-    n_results: int = Field(default=10, ge=1, le=100)
-    where: dict[str, Any] | None = None
+    passages: list[str] = Field(..., min_length=1)
 
 
-class SearchResponse(BaseModel):
-    ids: list[str]
-    distances: list[float]
-    metadatas: list[dict[str, Any]]
-    documents: list[str]
+class RankedPassage(BaseModel):
+    passage: str = Field(..., description="The passage text")
+    score: float = Field(..., description="Cosine similarity to the query, in [-1, 1]")
+    index: int = Field(..., description="Position of this passage in the original `passages` list")
+
+
+class RerankResponse(BaseModel):
+    results: list[RankedPassage] = Field(..., description="Passages ranked from most to least relevant")
     model: str
+    query: str
