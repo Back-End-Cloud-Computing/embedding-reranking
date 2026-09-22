@@ -1,0 +1,15 @@
+services:
+  embedding-reranking:
+    build: ./embedding-reranking
+    container_name: embedding-reranking
+    restart: unless-stopped
+    ports:
+      - "8003:8003"
+    env_file:
+      - ./embedding-reranking/.env
+    depends_on:
+      - vector-db
+    volumes:
+      - hf_cache:/root/.cache/huggingface
+    networks:
+      - ganjj-net
