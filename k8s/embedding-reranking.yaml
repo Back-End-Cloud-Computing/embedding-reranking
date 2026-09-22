@@ -1,0 +1,72 @@
+# embedding-reranking no Kubernetes.
+#
+# Troque "joao2006" pela sua conta do Docker Hub se for publicar sob outra,
+# ou use a imagem local se o cluster compartilhar o daemon do Docker (caso do
+# OrbStack/minikube com driver docker).
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: embedding-reranking
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: embedding-reranking
+  template:
+    metadata:
+      labels:
+        app: embedding-reranking
+    spec:
+      containers:
+        - name: embedding-reranking
+          image: joao2006/embedding-reranking:1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8003
+          env:
+            - name: EMBEDDING_MODEL_NAME
+              value: paraphrase-multilingual-MiniLM-L12-v2
+            - name: EMBEDDING_DEVICE
+              value: cpu
+            # Dependencias pelo NOME DO SERVICE, nunca pelo IP do Pod.
+            - name: VECTOR_DB_BASE_URL
+              value: http://vector-db:8002
+            - name: AUTH_SERVICE_BASE_URL
+              value: http://authorization:8081
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8003
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8003
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          # sentence-transformers carrega o modelo (lazy, no primeiro /embed)
+          # em memoria - folga maior que os outros servicos Python do GANJJ.
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1"
+              memory: "1536Mi"
+
+---
+# Endereco estavel do embedding-reranking. product-service chama
+# "http://embedding-reranking:8003" e nunca precisa saber quantos Pods existem.
+apiVersion: v1
+kind: Service
+metadata:
+  name: embedding-reranking
+spec:
+  type: ClusterIP
+  selector:
+    app: embedding-reranking
+  ports:
+    - port: 8003
+      targetPort: 8003
