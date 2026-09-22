@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     app_env: str = "development"
     log_level: str = "INFO"
 
+    auth_service_base_url: str = "http://localhost:8081"
+
     embedding_model_name: str = "paraphrase-multilingual-MiniLM-L12-v2"
     embedding_device: str = "cpu"
 
