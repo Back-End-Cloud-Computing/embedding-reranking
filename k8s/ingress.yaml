@@ -1,0 +1,24 @@
+# Entrada HTTP externa para o embedding-reranking.
+#
+# Mesmo padrão do authorization/k8s/ingress.yaml: roteamento por HOST (não por
+# path), então /embed, /index, /rerank, /docs, /health etc. continuam
+# funcionando sem prefixo, do jeito que o código já espera.
+#
+# O Ingress aponta para o SERVICE, nunca para um Pod.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: embedding-reranking-ingress
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: embedding-reranking.ganjj.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: embedding-reranking
+                port:
+                  number: 8003
