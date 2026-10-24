@@ -1,6 +1,6 @@
 # Dashboard Grafana — `embedding-reranking`
 
-[`embedding-reranking-dashboard.json`](vector-db-dashboard.json): requisições, erros e latência do embedding-reranking, a partir do
+[`embedding-reranking-dashboard.json`](embedding-reranking-dashboard.json): requisições, erros e latência do embedding-reranking, a partir do
 `/metrics` (`prometheus-fastapi-instrumentator`). Mesmo layout dos dashboards dos outros serviços do GANJJ.
 
 | Painel | O que mostra |
