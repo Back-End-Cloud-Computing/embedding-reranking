@@ -34,7 +34,7 @@ services:
         condition: service_started
 
   vector-db:
-    image: joao2006/vector-db:1.0.0
+    image: joao2006/vector-db:1.1.0
     restart: unless-stopped
     environment:
       AUTH_SERVICE_BASE_URL: http://authorization:8081
