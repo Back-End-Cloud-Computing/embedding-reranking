@@ -7,6 +7,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+# CPU-only torch first: the service runs with EMBEDDING_DEVICE=cpu, and the
+# default PyPI wheel bundles CUDA, which made the image ~3 GB compressed.
+# sentence-transformers then finds torch already satisfied.
+RUN pip install --no-cache-dir torch==2.14.1 --index-url https://download.pytorch.org/whl/cpu
+
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
