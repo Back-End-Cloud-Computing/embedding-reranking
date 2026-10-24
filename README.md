@@ -61,9 +61,16 @@ python3 -m venv .venv
 
 ## Running locally
 
+From a clean clone of this repository:
+
 ```bash
-docker build -t embedding-reranking .
-docker run -p 8003:8003 --env-file .env embedding-reranking
+cp .env.example .env
+docker compose up -d
 ```
+
+`docker-compose.yml` builds this service from the local code and brings up what it needs: `vector-db` (+ ChromaDB) from Docker Hub, where `/index` writes, and `authorization` (+ Oracle, built straight from its GitHub repo), which issues the tokens. The first `up` takes a few minutes: Oracle has to initialize, `authorization` is compiled, and the embedding model is downloaded from Hugging Face on first use (kept in the `hf_cache` volume).
+
+- API: `http://localhost:8003`
+- Tokens: `POST http://localhost:8081/auth/login` (default admin `admin@ganjj.com` / `adminSegura123`)
 
 Interactive API docs (Swagger) are available at `/docs` once running.
