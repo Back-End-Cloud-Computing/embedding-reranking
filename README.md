@@ -39,6 +39,7 @@ knowledge at all for reranking.
 | POST | `/index` | Embed one entity's text and (re)index it into a `vector-db` collection. |
 | POST | `/rerank` | Reorder caller-supplied passages by relevance to a query. |
 | GET | `/health` | Liveness check. |
+| GET | `/metrics` | Prometheus metrics (request count, errors, latency per route). No token; not exposed outside the cluster. |
 
 ## Stack
 

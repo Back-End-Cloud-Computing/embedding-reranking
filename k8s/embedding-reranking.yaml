@@ -17,6 +17,11 @@ spec:
     metadata:
       labels:
         app: embedding-reranking
+      # Prometheus descobre o pod por estas anotacoes e raspa /metrics direto nele.
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8003"
+        prometheus.io/path: "/metrics"
     spec:
       containers:
         - name: embedding-reranking
