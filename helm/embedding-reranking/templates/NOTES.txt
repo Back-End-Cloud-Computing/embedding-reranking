@@ -1,0 +1,5 @@
+O embedding-reranking busca a chave pública no authorization ao subir: instale-o antes.
+O /index grava no vector-db (instale o chart dele também).
+Serviço interno, sem Ingress. Teste:
+  kubectl port-forward svc/embedding-reranking 8003:8003
+  curl localhost:8003/health

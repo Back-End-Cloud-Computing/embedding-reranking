@@ -1,0 +1,12 @@
+# Só ClusterIP: o product chama embedding-reranking:8003 de dentro do cluster. Sem Ingress.
+apiVersion: v1
+kind: Service
+metadata:
+  name: embedding-reranking
+spec:
+  type: ClusterIP
+  selector:
+    app: embedding-reranking
+  ports:
+    - port: 8003
+      targetPort: 8003

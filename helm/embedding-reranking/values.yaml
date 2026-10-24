@@ -1,0 +1,27 @@
+image:
+  repository: joao2006/embedding-reranking
+  tag: ""            # vazio usa o appVersion do Chart.yaml
+  pullPolicy: IfNotPresent
+
+replicaCount: 3
+
+# O modelo fica em memória em cada réplica: os limites são maiores que os dos
+# outros serviços Python.
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: "1"
+    memory: 1536Mi
+
+# Variáveis não sensíveis, iguais às do k8s/embedding-reranking.yaml. Este
+# serviço não tem segredo próprio: valida o JWT com a chave pública do
+# authorization.
+config:
+  APP_ENV: production
+  LOG_LEVEL: INFO
+  AUTH_SERVICE_BASE_URL: http://authorization:8081
+  EMBEDDING_MODEL_NAME: paraphrase-multilingual-MiniLM-L12-v2
+  EMBEDDING_DEVICE: cpu
+  VECTOR_DB_BASE_URL: http://vector-db:8002

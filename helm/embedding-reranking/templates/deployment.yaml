@@ -1,0 +1,46 @@
+{{- $image := printf "%s:%s" .Values.image.repository (default .Chart.AppVersion .Values.image.tag) }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: embedding-reranking
+  labels:
+    app: embedding-reranking
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: embedding-reranking
+  template:
+    metadata:
+      labels:
+        app: embedding-reranking
+      annotations:
+        # O ConfigMap muda => novo hash => os pods reiniciam com a config nova.
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8003"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: embedding-reranking
+          image: {{ $image }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: 8003
+          envFrom:
+            - configMapRef:
+                name: embedding-reranking-config
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8003
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8003
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
